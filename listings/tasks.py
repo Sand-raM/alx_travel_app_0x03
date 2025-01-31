@@ -1,16 +1,24 @@
 from celery import shared_task
+from .models import Booking
+from django.contrib.auth.models import User
 from django.core.mail import send_mail
-from django.conf import settings
 
 @shared_task
-def send_booking_confirmation_email(user_email, booking_details):
+def send_booking_email(booking_id):
     """
-    Sends a booking confirmation email asynchronously.
+    Task to send an email notification when a booking is created
     """
-    subject = "Booking Confirmation"
-    message = f"Dear Customer,\n\nYour booking has been confirmed.\n\nDetails:\n{booking_details}\n\nThank you!"
-    sender_email = settings.DEFAULT_FROM_EMAIL
-    recipient_list = [user_email]
-
-    send_mail(subject, message, sender_email, recipient_list)
-    return f"Email sent to {user_email}"
+    
+    booking = Booking.objects.get(pk=booking_id)
+    user = User.objects.get(pk=booking.user_id)
+    
+    send_mail(
+        'Booking Confirmation',
+        f'Hi {user.username},\n\n'
+        f'This is a confirmation that your booking for {booking.listing.title} '
+        f'from {booking.check_in} to {booking.check_out} has been received.\n\n'
+        'Thank you for using Alx Travel!',
+        None,
+        [user.email],
+        fail_silently=False
+    )
